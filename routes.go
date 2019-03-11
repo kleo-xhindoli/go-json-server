@@ -95,7 +95,7 @@ func badRequestResponse(w http.ResponseWriter) {
 }
 
 func successResponse(object interface{}, w http.ResponseWriter) {
-	backToJSON, _ := json.MarshalIndent(object, "", "  ")
+	backToJSON, _ := json.Marshal(object)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(backToJSON)
 }
