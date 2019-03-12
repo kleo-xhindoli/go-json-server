@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"math/rand"
-
-	"github.com/clbanning/mxj"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -31,21 +29,17 @@ type EntityEntry struct {
 	Fields FieldsMap
 }
 
-// ParseEntities parses mv Map tree to GlobalObject
-func ParseEntities(mv *mxj.Map) (*GlobalObject, error) {
-	root, _ := mv.ValueForPath("")
+// ParseEntities parses a JSON string tree to GlobalObject
+func ParseEntities(dbJSON []byte) (*GlobalObject, error) {
+	var root map[string]interface{}
+	json.Unmarshal(dbJSON, &root)
 	entities := []*Entity{}
-	switch obj := root.(type) {
-	case map[string]interface{}:
-		for k := range obj {
-			parsed, err := ParseEntity(mv, k)
-			if err != nil {
-				return nil, err
-			}
-			entities = append(entities, parsed)
+	for k, v := range root {
+		parsed, err := ParseEntity(v, k)
+		if err != nil {
+			return nil, err
 		}
-	default:
-		return nil, errors.New("malformed JSON: Root is not object")
+		entities = append(entities, parsed)
 	}
 
 	g := GlobalObject{
@@ -54,16 +48,17 @@ func ParseEntities(mv *mxj.Map) (*GlobalObject, error) {
 	return &g, nil
 }
 
-// ParseEntity parses a mv sub tree to an Entity
-func ParseEntity(mv *mxj.Map, path string) (*Entity, error) {
-	entriesJSON, err := mv.ValuesForPath(path)
-	if err != nil {
+// ParseEntity parses a JSON sub tree to an Entity
+func ParseEntity(entriesJSON interface{}, path string) (*Entity, error) {
+	entriesArray, ok := entriesJSON.([]interface{})
+	if !ok {
 		return nil, errors.New("could not read Entity " + path)
+
 	}
 	entries := []*EntityEntry{}
 
-	for _, entryJSON := range entriesJSON {
-		entry, err := ParseEntry(&entryJSON)
+	for _, entryJSON := range entriesArray {
+		entry, err := ParseEntry(entryJSON)
 		if err != nil {
 			return nil, err
 		}
@@ -77,9 +72,9 @@ func ParseEntity(mv *mxj.Map, path string) (*Entity, error) {
 	return &entity, nil
 }
 
-// ParseEntry parses a mv sub tree to an EntityEntry
-func ParseEntry(entryJSON *interface{}) (*EntityEntry, error) {
-	fields, ok := (*entryJSON).(map[string]interface{})
+// ParseEntry parses a JSON sub tree to an EntityEntry
+func ParseEntry(entryJSON interface{}) (*EntityEntry, error) {
+	fields, ok := entryJSON.(map[string]interface{})
 	if !ok {
 		return nil, errors.New("entry in Entity is not object")
 	}

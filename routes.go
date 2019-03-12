@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/clbanning/mxj"
-
 	"github.com/gorilla/mux"
 )
 
@@ -46,7 +44,7 @@ func CreateCreateHandler(e *Entity, onUpdateFn func()) handlerFunc {
 			fmt.Println(err)
 			return
 		}
-		entry, err := ParseEntry(&entryJSON)
+		entry, err := ParseEntry(entryJSON)
 		if err != nil {
 			badRequestResponse(w)
 			fmt.Println(err)
@@ -67,7 +65,7 @@ func CreateUpdateHandler(e *Entity, onUpdateFn func()) handlerFunc {
 			fmt.Println(err)
 			return
 		}
-		entry, err := ParseEntry(&entryJSON)
+		entry, err := ParseEntry(entryJSON)
 		entry.ID = mux.Vars(r)["id"]
 		fields := entry.Fields
 		(*fields)["id"] = mux.Vars(r)["id"]
@@ -106,12 +104,9 @@ func parseBody(r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 	defer r.Body.Close()
-	mv, err := mxj.NewMapJson(b)
 
-	if err != nil {
-		return nil, err
-	}
-	ret, err := mv.ValueForPath("")
+	var ret interface{}
+	err = json.Unmarshal(b, &ret)
 	if err != nil {
 		return nil, err
 	}

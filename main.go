@@ -6,9 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 
-	"github.com/clbanning/mxj"
 	"github.com/gorilla/mux"
 )
 
@@ -17,30 +15,31 @@ var globalObject GlobalObject
 func main() {
 	// Define flags
 	store := flag.String("store", "./db.json", "JSON file to store/retrieve data from")
-	port := flag.Int("port", 8080, "the port to run the server on")
+	port := flag.Int("port", 9001, "the port to run the server on")
 	flag.Parse()
 
-	mv, err := loadDataFromFile(*store)
+	dbData, err := loadDataFromFile(*store)
 	if err != nil {
 		log.Fatalf("Could not read from file %s\n", *store)
 	}
 
 	r := mux.NewRouter()
-	buildRoutes(*store, r, mv)
+	buildRoutes(*store, dbData, r)
 
 	portStr := fmt.Sprintf(":%d", *port)
 	fmt.Printf("Server running on port %d\n", *port)
 	log.Fatal(http.ListenAndServe(portStr, r))
 }
 
-func buildRoutes(storeFile string, r *mux.Router, data *mxj.Map) *mux.Router {
+func buildRoutes(storeFilePath string, data []byte, r *mux.Router) *mux.Router {
+
 	globalObject, err := ParseEntities(data)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	onUpdateFn := saveDataToFile(storeFile, globalObject)
+	onUpdateFn := saveDataToFile(storeFilePath, globalObject)
 
 	for _, entity := range globalObject.Entities {
 		multipleRoute := fmt.Sprintf("/%s", entity.Name)
@@ -64,18 +63,10 @@ func saveDataToFile(filePath string, g *GlobalObject) func() {
 	}
 }
 
-func loadDataFromFile(filePath string) (*mxj.Map, error) {
-	reader, err := os.Open(filePath)
-
+func loadDataFromFile(filePath string) ([]byte, error) {
+	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
-
-	mv, err := mxj.NewMapJsonReader(reader)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &mv, nil
+	return data, nil
 }
