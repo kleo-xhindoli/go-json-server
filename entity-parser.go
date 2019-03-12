@@ -31,7 +31,10 @@ type EntityEntry struct {
 // ParseEntities parses a JSON string tree to GlobalObject
 func ParseEntities(dbJSON []byte) (*GlobalObject, error) {
 	var root map[string]interface{}
-	json.Unmarshal(dbJSON, &root)
+	err := json.Unmarshal(dbJSON, &root)
+	if err != nil {
+		return nil, err
+	}
 	entities := []*Entity{}
 	for k, v := range root {
 		parsed, err := ParseEntity(v, k)
