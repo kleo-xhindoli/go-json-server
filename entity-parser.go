@@ -3,11 +3,10 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
+	"time"
 )
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const idLen = 10
 
 // GlobalObject is the root object in the JSON
 type GlobalObject struct {
@@ -132,9 +131,10 @@ func setAndReadID(fields FieldsMap) string {
 }
 
 func generateID() string {
-	b := make([]byte, idLen)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b := make([]byte, 16)
+	rand.Read(b)
+	uuid := fmt.Sprintf("%x-%x-%x-%x-%x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	return uuid
 }
