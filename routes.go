@@ -26,8 +26,8 @@ func CreateGetAllHandler(e *Entity) handlerFunc {
 func CreateGetOneHandler(e *Entity) handlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := mux.Vars(r)["id"]
-		found := e.FindEntryByID(id)
-		if found == nil {
+		found, err := e.FindEntryByID(id)
+		if err != nil {
 			notFoundResponse(w)
 			return
 		}
