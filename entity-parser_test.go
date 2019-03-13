@@ -277,3 +277,117 @@ func TestToJSON(t *testing.T) {
 		})
 	}
 }
+
+func mockEntity(t *testing.T) *Entity {
+	books := []interface{}{
+		map[string]interface{}{"id": "book-0", "title": "book 0", "author": "xxx yyy"},
+		map[string]interface{}{"id": "book-1", "title": "book 1", "author": "xx yy"},
+	}
+	entity, err := ParseEntity(books, "books")
+
+	if err != nil {
+		t.Fatalf("expected to parse input slice to Entity\nerr: %s", err)
+	}
+
+	return entity
+}
+
+func TestAppendEntity(t *testing.T) {
+	entity := mockEntity(t)
+	happyData := EntityEntry{
+		ID: "book-2",
+		Fields: &map[string]interface{}{
+			"id":     "book-2",
+			"title":  "book-2",
+			"author": "john smith",
+		},
+	}
+
+	tt := []struct {
+		name string
+		data EntityEntry
+	}{
+		{name: "happy path", data: happyData},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			prevLen := len(entity.Entries)
+			entity.AppendEntityEntry(&tc.data)
+			newLen := len(entity.Entries)
+
+			if newLen != prevLen+1 {
+				t.Errorf("expected new Entities len to be %d, instead got %d", prevLen+1, newLen)
+			}
+			// TODO validate fields
+
+		})
+	}
+}
+
+func TestUpdateEntityEntry(t *testing.T) {
+	type testData struct {
+		ID string
+		e  *EntityEntry
+	}
+
+	happyEntry := EntityEntry{
+		ID: "book-1",
+		Fields: &map[string]interface{}{
+			"id":     "book-1",
+			"title":  "book-1 updated",
+			"author": "john smith updated",
+		},
+	}
+
+	entity := mockEntity(t)
+	tt := []struct {
+		name       string
+		data       testData
+		shouldFail bool
+	}{
+		{name: "happy path", data: testData{ID: "book-1", e: &happyEntry}, shouldFail: false},
+		{name: "invalid ID", data: testData{ID: "book-undefined", e: &happyEntry}, shouldFail: true},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			err := entity.UpdateEntityEntry(tc.data.ID, tc.data.e)
+
+			if err != nil {
+				if !tc.shouldFail {
+					t.Fatalf("expected update Entry not to fail\nerr: %s", err)
+				} else {
+					return
+				}
+			}
+
+			if tc.shouldFail {
+				t.Fatalf("expected update Entry to fail for %s", tc.name)
+			}
+
+			// validate that fields have been updated correctly
+			updatedE, err := entity.FindEntryByID(tc.data.ID)
+
+			if err != nil {
+				t.Fatalf("expected FindEntryByID not to fail for id '%s'\nerr: %s", tc.data.ID, err)
+			}
+
+			fields := updatedE.Fields
+
+			// ids should match
+			if (*fields)["id"] != tc.data.ID {
+				t.Errorf("expected field 'id' to be '%s', instead got '%s'", tc.data.ID, (*fields)["id"])
+			}
+
+			inputFields := tc.data.e.Fields
+			// all other fields should match input
+			eq := reflect.DeepEqual((*fields), *(inputFields))
+
+			if !eq {
+				t.Errorf("expected fields on EntityEntry to equal input fields after update")
+			}
+
+		})
+	}
+}
