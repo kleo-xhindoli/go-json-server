@@ -93,23 +93,23 @@ func (e *Entity) AppendEntityEntry(entry *EntityEntry) {
 }
 
 // FindEntryByID finds an EntityEntry within an Entity by its ID
-func (e *Entity) FindEntryByID(ID string) *EntityEntry {
-	var found *EntityEntry
+func (e *Entity) FindEntryByID(ID string) (*EntityEntry, error) {
 	for _, entry := range e.Entries {
 		if entry.ID == ID {
-			found = entry
-			break
+			return entry, nil
 		}
 	}
-	return found
+	return nil, errors.New("Entry not found")
 }
 
 // UpdateEntityEntry updates an existing Entry in an Entity
-func (e *Entity) UpdateEntityEntry(ID string, newEntry *EntityEntry) {
-	existing := e.FindEntryByID(ID)
-	if existing != nil {
-		*existing = *newEntry
+func (e *Entity) UpdateEntityEntry(ID string, newEntry *EntityEntry) error {
+	existing, err := e.FindEntryByID(ID)
+	if err != nil {
+		return err
 	}
+	*existing = *newEntry
+	return nil
 }
 
 // ToJSON converts the GlobalObject back to JSON to be saved
