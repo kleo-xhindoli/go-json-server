@@ -319,7 +319,14 @@ func TestAppendEntity(t *testing.T) {
 			if newLen != prevLen+1 {
 				t.Errorf("expected new Entities len to be %d, instead got %d", prevLen+1, newLen)
 			}
-			// TODO validate fields
+			inputFields := tc.data.Fields
+			outputFields := entity.Entries[newLen-1].Fields
+
+			eq := reflect.DeepEqual(*outputFields, *inputFields)
+
+			if !eq {
+				t.Errorf("expected fields of last EntityEntry to equal input fields after insert")
+			}
 
 		})
 	}
